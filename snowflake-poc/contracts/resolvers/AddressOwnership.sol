@@ -57,7 +57,7 @@ contract AddressOwnership is SnowflakeResolver {
         bool signed;
         bytes32 claimedSealedBid;
         while(!signed && (i < blockLag)) {
-            claimedSealedBid = keccak256(abi.encodePacked("Link Address to Snowflake", blockhash(block.number - ++i)));
+            claimedSealedBid = keccak256(abi.encodePacked("Link Address to Snowflake", blockhash(block.number - ++i), _address));
             signed = isSigned(_address, claimedSealedBid, v, r, s);
         }
         if (signed) {

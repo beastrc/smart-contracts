@@ -5,15 +5,14 @@ const SafeMath = artifacts.require('./libraries/SafeMath.sol')
 const addressSet = artifacts.require('./libraries/addressSet.sol')
 
 module.exports = function (deployer) {
-  // // deploy libraries
-  deployer.deploy(SafeMath)
-  deployer.deploy(addressSet)
-
-  // deploy snowflake
-  deployer.link(SafeMath, snowflake)
-  deployer.link(addressSet, snowflake)
-  deployer.deploy(snowflake)
-
-  // deploy status
   deployer.deploy(status)
+
+  // // deploy libraries
+  // deployer.deploy(SafeMath)
+  // deployer.deploy(addressSet)
+
+  // // deploy snowflake
+  // deployer.link(SafeMath, snowflake)
+  // deployer.link(addressSet, snowflake)
+  // deployer.deploy(snowflake)
 }

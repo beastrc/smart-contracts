@@ -14,7 +14,6 @@ contract DummyResolver is SnowflakeResolver {
     constructor () public {
         snowflakeName = "Dummy Resolver";
         snowflakeDescription = "This is an example Snowflake resolver.";
-        callOnSignUp = true;
     }
 
     // implement signup function
@@ -28,6 +27,6 @@ contract DummyResolver is SnowflakeResolver {
     // example function that calls withdraw on a linked hydroID
     function withdrawFrom(string hydroId, uint amount) public onlyOwner {
         Snowflake snowflake = Snowflake(snowflakeAddress);
-        require(snowflake.withdrawFrom(hydroId, owner, amount), "Amount was not withdrawn.");
+        require(snowflake.withdrawFrom(hydroId, owner, amount));
     }
 }

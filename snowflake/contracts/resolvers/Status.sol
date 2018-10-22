@@ -1,49 +1,53 @@
 pragma solidity ^0.4.24;
 
-import "../SnowflakeResolver.sol";
+import "./SnowflakeResolver.sol";
 
 
-interface SnowflakeInterface {
-    function identityRegistryAddress() external view returns (address);
-    function withdrawSnowflakeBalanceFrom(uint einFrom, address to, uint amount) external;
+interface Snowflake {
+    function whitelistResolver(address resolver) external;
+    function withdrawSnowflakeBalanceFrom(string hydroIdFrom, address to, uint amount) external;
+    function getHydroId(address _address) external returns (string hydroId);
 }
 
-interface IdentityRegistryInterface {
-    function getEIN(address _address) external view returns (uint ein);
-}
 
 contract Status is SnowflakeResolver {
-    mapping (uint => string) private statuses;
+    mapping (string => string) internal statuses;
 
     uint signUpFee = 1000000000000000000;
     string firstStatus = "My first status 😎";
 
-    constructor (address snowflakeAddress)
-        SnowflakeResolver("Status", "Set your status.", snowflakeAddress, true, false) public
-    {}
+    constructor (address snowflakeAddress) public {
+        snowflakeName = "Status";
+        snowflakeDescription = "Set your status.";
+        setSnowflakeAddress(snowflakeAddress);
+
+        callOnSignUp = true;
+
+        Snowflake snowflake = Snowflake(snowflakeAddress);
+        snowflake.whitelistResolver(address(this));
+    }
 
     // implement signup function
-    function onSignUp(uint ein, uint allowance) public senderIsSnowflake() returns (bool) {
+    function onSignUp(string hydroId, uint allowance) public senderIsSnowflake() returns (bool) {
         require(allowance >= signUpFee, "Must set an allowance of at least 1 HYDRO.");
-        SnowflakeInterface snowflake = SnowflakeInterface(snowflakeAddress);
-        snowflake.withdrawSnowflakeBalanceFrom(ein, owner(), signUpFee);
-        statuses[ein] = firstStatus;
-        emit StatusUpdated(ein, firstStatus);
+        Snowflake snowflake = Snowflake(snowflakeAddress);
+        snowflake.withdrawSnowflakeBalanceFrom(hydroId, owner, signUpFee);
+        statuses[hydroId] = firstStatus;
+        emit StatusUpdated(hydroId, firstStatus);
         return true;
     }
 
-    function getStatus(uint ein) public view returns (string) {
-        return statuses[ein];
+    function getStatus(string hydroId) public view returns (string) {
+        return statuses[hydroId];
     }
 
     // example function that calls withdraw on a linked hydroID
     function setStatus(string status) public {
-        uint ein = IdentityRegistryInterface(
-            SnowflakeInterface(snowflakeAddress).identityRegistryAddress()
-        ).getEIN(msg.sender);
-        statuses[ein] = status;
-        emit StatusUpdated(ein, status);
+        Snowflake snowflake = Snowflake(snowflakeAddress);
+        string memory hydroId = snowflake.getHydroId(msg.sender);
+        statuses[hydroId] = status;
+        emit StatusUpdated(hydroId, status);
     }
 
-    event StatusUpdated(uint ein, string status);
+    event StatusUpdated(string hydroId, string status);
 }

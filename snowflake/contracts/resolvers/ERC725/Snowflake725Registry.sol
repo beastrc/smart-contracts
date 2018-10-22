@@ -1,23 +1,23 @@
 pragma solidity ^0.4.24;
 
 import "./ClaimHolder.sol";
-import "../../SnowflakeResolver.sol";
+import "../SnowflakeResolver.sol";
 
-interface IdentityRegistryInterface {
-    function getEIN(address _address) external view returns (uint ein);
-    function getDetails(uint ein) external view
+contract IdentityRegistry {
+    function getEIN(address _address) public view returns (uint ein);
+    function getDetails(uint ein) public view
         returns (address recoveryAddress, address[] associatedAddresses, address[] providers, address[] resolvers);
 }
 
 contract Snowflake725Registry is SnowflakeResolver {
 
-    IdentityRegistryInterface registry;
+    IdentityRegistry registry;
 
     constructor (address _identityRegistryAddress) public {
         snowflakeName = "Snowflake ERC725 Registry";
         snowflakeDescription = "A registry of ERC725 contracts and their corresponding Snowflake owners";
         callOnSignUp = false;
-        registry = IdentityRegistryInterface(_identityRegistryAddress);
+        registry = IdentityRegistry(_identityRegistryAddress);
     }
 
     mapping(uint => address) einTo725;
@@ -28,7 +28,7 @@ contract Snowflake725Registry is SnowflakeResolver {
         require(einTo725[ein] == address(0), "You already have a 725");
 
         ClaimHolder claim = new ClaimHolder();
-        require(claim.addKey(keccak256(abi.encodePacked(msg.sender)), 1, 1), "Key not added.");
+        require(claim.addKey(keccak256(abi.encodePacked(msg.sender)), 1, 1));
 
         einTo725[ein] = claim;
         return(claim);
@@ -42,7 +42,7 @@ contract Snowflake725Registry is SnowflakeResolver {
 
         require(einTo725[ein] == address(0), "You already have a 725");
 
-        ClaimHolder claim = ClaimHolder(_contract);
+        ClaimHolder claim =  ClaimHolder(_contract);
         bytes32 key;
 
         for (uint x = 0; x < ownedAddresses.length; x++) {

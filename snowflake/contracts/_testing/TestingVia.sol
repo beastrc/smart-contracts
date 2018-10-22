@@ -1,18 +1,18 @@
 pragma solidity ^0.4.24;
 
-import "../SnowflakeVia.sol";
+import "./SnowflakeVia.sol";
 
 interface ERC20 {
     function balanceOf(address who) external returns (uint256);
     function transfer(address to, uint256 value) external returns (bool);
 }
 
-interface SnowflakeInterface {
+interface Snowflake {
     function whitelistResolver(address resolver) external;
     function getHydroId(address _address) external returns (string hydroId);
 }
 
-contract ViaSample is SnowflakeVia {
+contract TestingVia is SnowflakeVia {
     constructor (address snowflakeAddress, address hydroTokenAddress) public {
         setSnowflakeAddress(snowflakeAddress);
         setHydroTokenAddress(hydroTokenAddress);
@@ -46,7 +46,7 @@ contract ViaSample is SnowflakeVia {
 
     // allows hydroIds with balances to withdraw their accumulated eth balance to an address
     function withdrawTo(address to) public {
-        SnowflakeInterface snowflake = SnowflakeInterface(snowflakeAddress);
+        Snowflake snowflake = Snowflake(snowflakeAddress);
         to.transfer(balances[snowflake.getHydroId(msg.sender)]);
     }
 

@@ -1,9 +1,9 @@
 pragma solidity ^0.4.24;
 
-import "../SnowflakeResolver.sol";
+import "../resolvers/SnowflakeResolver.sol";
 
 
-interface SnowflakeInterface {
+interface Snowflake {
     function whitelistResolver(address resolver) external;
     function transferSnowflakeBalanceFrom(string hydroIdFrom, string hydroIdTo, uint amount) external;
     function withdrawSnowflakeBalanceFrom(string hydroIdFrom, address to, uint amount) external;
@@ -16,7 +16,7 @@ interface SnowflakeInterface {
 }
 
 
-contract ResolverSample is SnowflakeResolver {
+contract TestingResolver is SnowflakeResolver {
     mapping (string => bool) internal signedUp;
 
     constructor (address snowflakeAddress) public {
@@ -27,7 +27,7 @@ contract ResolverSample is SnowflakeResolver {
         callOnSignUp = true;
         callOnRemoval = true;
 
-        SnowflakeInterface snowflake = SnowflakeInterface(snowflakeAddress);
+        Snowflake snowflake = Snowflake(snowflakeAddress);
         snowflake.whitelistResolver(address(this));
     }
 
@@ -53,12 +53,12 @@ contract ResolverSample is SnowflakeResolver {
 
     // example functions to test *From token functions
     function transferSnowflakeBalanceFrom(string hydroIdFrom, string hydroIdTo, uint amount) public onlyOwner {
-        SnowflakeInterface snowflake = SnowflakeInterface(snowflakeAddress);
+        Snowflake snowflake = Snowflake(snowflakeAddress);
         snowflake.transferSnowflakeBalanceFrom(hydroIdFrom, hydroIdTo, amount);
     }
 
     function withdrawSnowflakeBalanceFrom(string hydroIdFrom, address to, uint amount) public onlyOwner {
-        SnowflakeInterface snowflake = SnowflakeInterface(snowflakeAddress);
+        Snowflake snowflake = Snowflake(snowflakeAddress);
         snowflake.withdrawSnowflakeBalanceFrom(hydroIdFrom, to, amount);
     } 
 

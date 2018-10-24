@@ -1,8 +1,6 @@
 pragma solidity ^0.4.24;
 
 interface IdentityRegistryInterface {
-    function isSigned(address _address, bytes32 messageHash, uint8 v, bytes32 r, bytes32 s)
-        external view returns (bool);
     function getEIN(address _address) external view returns (uint ein);
     function isResolverFor(uint ein, address resolver) external view returns (bool);
     function identityExists(uint ein) external view returns (bool);
@@ -21,7 +19,31 @@ interface EthereumDIDRegistry {
     function revokeAttribute(address identity, bytes32 name, bytes value) external;
 }
 
-contract ERC1056 {
+contract SignatureVerifier {
+    // define the Ethereum prefix for signing a message of length 32
+    bytes private prefix = "\x19Ethereum Signed Message:\n32";
+
+    // checks if the provided (v, r, s) signature of messageHash was created by the private key associated with _address
+    function isSigned(address _address, bytes32 messageHash, uint8 v, bytes32 r, bytes32 s) public view returns (bool) {
+        return _isSigned(_address, messageHash, v, r, s) || _isSignedPrefixed(_address, messageHash, v, r, s);
+    }
+
+    // checks unprefixed signatures
+    function _isSigned(address _address, bytes32 messageHash, uint8 v, bytes32 r, bytes32 s)
+        private pure returns (bool)
+    {
+        return ecrecover(messageHash, v, r, s) == _address;
+    }
+
+    // checks prefixed signatures
+    function _isSignedPrefixed(address _address, bytes32 messageHash, uint8 v, bytes32 r, bytes32 s)
+        private view returns (bool)
+    {
+        return _isSigned(_address, keccak256(abi.encodePacked(prefix, messageHash)), v, r, s);
+    }
+}
+
+contract ERC1056 is SignatureVerifier {
     IdentityRegistryInterface identityRegistry;
     EthereumDIDRegistry ethereumDIDRegistry;
 
@@ -36,7 +58,7 @@ contract ERC1056 {
     function initialize(address identity, uint8 sigV, bytes32 sigR, bytes32 sigS) public {
         uint ein = identityRegistry.getEIN(msg.sender);
         require(einToDID[ein] == address(0), "This EIN has already been initialized");
-        ethereumDIDRegistry.changeOwnerSigned(identity, sigV, sigR, sigS, address(this));
+        ethereumDIDRegistry.changeOwnerSigned(identity, sigV, sigR, sigS, this);
         einToDID[ein] = identity;
     }
 
@@ -47,14 +69,7 @@ contract ERC1056 {
 
     function changeOwnerDelegated(address newOwner, uint8 sigV, bytes32 sigR, bytes32 sigS, address addrDelegated) public {
         uint ein = identityRegistry.getEIN(addrDelegated);
-        require(
-            identityRegistry.isSigned(
-                addrDelegated,
-                keccak256(abi.encodePacked("changeOwnerDelegated", newOwner, actionNonce[ein])),
-                sigV, sigR, sigS
-            ),
-            "Function execution is incorrectly signed."
-        );
+        require(isSigned(addrDelegated, keccak256(abi.encodePacked("changeOwnerDelegated", newOwner, actionNonce[ein])), sigV, sigR, sigS), "Function execution is incorrectly signed.");
         actionNonce[ein]++;
         _changeOwner(einToDID[ein], newOwner);
     }
@@ -70,19 +85,18 @@ contract ERC1056 {
     }
 
     function addDelegateDelegated(
-        bytes32 delegateType, address delegate, uint validity,
-        uint8 sigV, bytes32 sigR, bytes32 sigS, address addrDelegated
+        bytes32 delegateType, address delegate, uint validity, uint8 sigV, bytes32 sigR, bytes32 sigS, address addrDelegated
     )
         public
     {
         uint ein = identityRegistry.getEIN(addrDelegated);
-        require(
-            identityRegistry.isSigned(
-                addrDelegated,
-                keccak256(abi.encodePacked("addDelegateDelegated", delegateType, delegate, validity, actionNonce[ein])),
-                sigV, sigR, sigS
+        require(isSigned(
+            addrDelegated,
+            keccak256(
+                abi.encodePacked("addDelegateDelegated", delegateType, delegate, validity, actionNonce[ein])
             ),
-            "Function execution is incorrectly signed."
+            sigV, sigR, sigS)
+            , "Function execution is incorrectly signed."
         );
         actionNonce[ein]++;
         _addDelegate(einToDID[ein], delegateType, delegate, validity);
@@ -98,20 +112,15 @@ contract ERC1056 {
         _revokeDelegate(einToDID[ein], delegateType, delegate);
     }
 
-    function revokeDelegateDelegated(
-        bytes32 delegateType, address delegate, uint8 sigV, bytes32 sigR, bytes32 sigS, address addrDelegated
-    )
-        public
-    {
+    function revokeDelegateDelegated(bytes32 delegateType, address delegate, uint8 sigV, bytes32 sigR, bytes32 sigS, address addrDelegated) public {
         uint ein = identityRegistry.getEIN(addrDelegated);
-        require(
-            identityRegistry.isSigned(
-                addrDelegated,
-                keccak256(abi.encodePacked("revokeDelegateDelegated", delegateType, delegate, actionNonce[ein])),
-                sigV, sigR, sigS
+        require(isSigned(
+            addrDelegated,
+            keccak256(
+                abi.encodePacked("revokeDelegateDelegated", delegateType, delegate, actionNonce[ein])
             ),
-            "Function execution is incorrectly signed."
-        );
+            sigV, sigR, sigS
+        ), "Function execution is incorrectly signed.");
         actionNonce[ein]++;
         _revokeDelegate(einToDID[ein], delegateType, delegate);
     }
@@ -126,20 +135,15 @@ contract ERC1056 {
         _setAttribute(einToDID[ein], name, value, validity);
     }
 
-    function setAttributeDelegated(
-        bytes32 name, bytes value, uint validity, uint8 sigV, bytes32 sigR, bytes32 sigS, address addrDelegated
-    )
-        public
-    {
+    function setAttributeDelegated(bytes32 name, bytes value, uint validity, uint8 sigV, bytes32 sigR, bytes32 sigS, address addrDelegated) public {
         uint ein = identityRegistry.getEIN(addrDelegated);
-        require(
-            identityRegistry.isSigned(
-                addrDelegated,
-                keccak256(abi.encodePacked("setAttributeDelegated", name, value, validity, actionNonce[ein])),
-                sigV, sigR, sigS
+        require(isSigned(
+            addrDelegated,
+            keccak256(
+                abi.encodePacked("setAttributeDelegated", name, value, validity, actionNonce[ein])
             ),
-            "Function execution is incorrectly signed."
-        );
+            sigV, sigR, sigS
+        ), "Function execution is incorrectly signed.");
         actionNonce[ein]++;
         _setAttribute(einToDID[ein], name, value, validity);
     }
@@ -160,14 +164,13 @@ contract ERC1056 {
         public
     {
         uint ein = identityRegistry.getEIN(addrDelegated);
-        require(
-            identityRegistry.isSigned(
-                addrDelegated,
-                keccak256(abi.encodePacked("revokeDelegateDelegated", name, value, actionNonce[ein])),
-                sigV, sigR, sigS
+        require(isSigned(
+            addrDelegated,
+            keccak256(
+                abi.encodePacked("revokeAttributeDelegated", name, value, actionNonce[ein])
             ),
-            "Function execution is incorrectly signed."
-        );
+            sigV, sigR, sigS
+        ), "Function execution is incorrectly signed.");
         actionNonce[ein]++;
         _revokeAttribute(einToDID[ein], name, value);
     }

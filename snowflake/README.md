@@ -3,10 +3,11 @@
 [![Coverage Status](https://coveralls.io/repos/github/hydrogen-dev/smart-contracts/badge.svg?branch=master)](https://coveralls.io/github/hydrogen-dev/smart-contracts?branch=master)
 
 ## Introduction
-Snowflake is an [ERC-1484 `Provider`](https://erc1484.org/) that provides on-/off-chain identity management. For more details, see [our whitepaper](https://github.com/hydrogen-dev/hydro-docs/tree/master/Snowflake).
+Snowflake is an ERC-1484 `Provider` that provides on-/off-chain identity management. For more details, see [our whitepaper](https://github.com/hydrogen-dev/hydro-docs/tree/master/Snowflake).
 
-##
-[Try the demo front-end](https://hydroblockchain.github.io/snowflake-dashboard/)!
+## Contract Address
+[Snowflake beta on Rinkeby](https://rinkeby.etherscan.io/address/0x7EdA95f86D49ac97D2142Cb3903915835160efEe)
+[Client Raindrop beta on Rinkeby](https://rinkeby.etherscan.io/address/0x7EdA95f86D49ac97D2142Cb3903915835160efEe)
 
 ## Testing With Truffle
 - This folder has a suite of tests created through [Truffle](https://github.com/trufflesuite/truffle).
